@@ -45,5 +45,7 @@ COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 EXPOSE 3000
 WORKDIR /app/apps/backend
 
-# Apply migrations then start. (Use a real migration in production.)
-CMD ["sh", "-c", "npx prisma migrate deploy || npx prisma db push; node dist/main.js"]
+# Create/update the schema, then start. `migrate deploy` applies committed
+# migrations in production; `db push` bootstraps the schema when no migrations
+# exist yet (demo/first run). Falls through to start the API either way.
+CMD ["sh", "-c", "npx prisma migrate deploy 2>/dev/null || npx prisma db push --skip-generate --accept-data-loss; node dist/main.js"]

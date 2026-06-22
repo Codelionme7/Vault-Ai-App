@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate --workspace @echovault/backend
+
+      - name: Build shared + audio engine
+        run: |
+          npm run build --workspace @echovault/shared
+          npm run build --workspace @echovault/audio-engine
+
+      - name: Typecheck
+        run: |
+          npm run typecheck --workspace @echovault/backend
+          npm run typecheck --workspace @echovault/web
+          npm run typecheck --workspace @echovault/extension
+
+      - name: Unit tests (audio engine)
+        run: npm run test --workspace @echovault/audio-engine
+
+      - name: Unit tests (backend)
+        run: npm run test --workspace @echovault/backend
+
+      - name: Unit tests (web)
+        run: npm run test --workspace @echovault/web
+
+      - name: Build web app
+        run: npm run build --workspace @echovault/web
+
+      - name: Build browser extension
+        run: npm run build --workspace @echovault/extension
+
+  docker:
+    name: Backend Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -f apps/backend/Dockerfile -t echovault-backend:ci .
