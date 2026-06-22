@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+.next/
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Storage (local-first recordings should never be committed)
+storage/
+recordings/
+*.wav
+*.flac
+*.mp3
+*.webm
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Coverage / test artifacts
+coverage/
+.nyc_output/
+
+# Prisma
+apps/backend/prisma/*.db
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+
+# Extension build
+apps/extension/dist/
+*.crx
+*.pem

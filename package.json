@@ -1,0 +1,29 @@
+{
+  "name": "echovault-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "EchoVault AI — Audio-first meeting and knowledge capture system. Audio is the source of truth.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:backend": "npm run start:dev --workspace @echovault/backend",
+    "dev:web": "npm run dev --workspace @echovault/web",
+    "build:engine": "npm run build --workspace @echovault/audio-engine",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "setup": "bash scripts/setup.sh"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
