@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>EchoVault AI</title>
+  </head>
+  <body>
+    <header class="head">
+      <span class="brand"><span class="mark">◉</span> EchoVault <span class="ai">AI</span></span>
+      <span id="badge" class="badge"></span>
+    </header>
+
+    <section class="source">
+      <div id="source-type" class="source-type">Detecting source…</div>
+      <div id="source-title" class="source-title"></div>
+      <div id="source-extra" class="source-extra"></div>
+    </section>
+
+    <section class="live" id="live" hidden>
+      <div class="timer" id="timer">0:00</div>
+      <div class="livestats">
+        <span id="chunks">0 chunks</span>
+        <span id="size">0 B</span>
+      </div>
+    </section>
+
+    <button id="toggle" class="btn btn--record">● Start recording</button>
+
+    <section class="saved">
+      <div class="saved__head">Saved on this device</div>
+      <ul id="saved-list" class="saved__list"></ul>
+    </section>
+
+    <footer class="foot">Audio is saved locally in 5-min chunks — crash-safe.</footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
