@@ -1,4 +1,4 @@
-import type { RecordingChannel } from './constants.js';
+import type { RecordingChannel } from './constants';
 
 /**
  * Lifecycle of a single audio chunk. A chunk is the atomic unit of durability:

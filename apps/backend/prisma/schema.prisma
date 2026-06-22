@@ -1,0 +1,177 @@
+// EchoVault AI — data model.
+// This schema is the source of truth for the ERD (docs/ERD.md).
+// Design principle: the Recording + Chunk tables are the durable record of
+// captured audio; transcripts/summaries are optional, secondary artifacts that
+// hang off a Recording and can be absent or regenerated at any time.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RecordingStatus {
+  recording
+  paused
+  completed
+  interrupted // ended unexpectedly; candidate for recovery
+  recovered // reassembled from chunks after an interruption
+}
+
+enum SourceType {
+  google_meet
+  zoom_web
+  teams_web
+  youtube
+  podcast
+  webinar
+  course
+  interview
+  manual
+}
+
+enum ChunkStatus {
+  recording
+  captured
+  stored
+  uploading
+  uploaded
+  failed
+}
+
+enum TranscriptStatus {
+  not_requested
+  queued
+  processing
+  completed
+  failed
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  recordings    Recording[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  tokenHash String // SHA-256 of the issued token; raw token never stored
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Recording {
+  id     String @id @default(cuid())
+  owner  User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  title      String          @default("Untitled recording")
+  status     RecordingStatus @default(recording)
+  sourceType SourceType      @default(manual)
+
+  // Best-effort session metadata (meeting title, url, participant count, ...).
+  metadata Json @default("{}")
+
+  // Captured channels: e.g. ["tab", "mic", "mixed"].
+  channels String[] @default([])
+
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+  durationMs Int       @default(0) // authoritative, derived from committed chunks
+  sizeBytes  BigInt    @default(0)
+
+  tags  String[] @default([])
+  notes String?
+
+  transcriptStatus  TranscriptStatus @default(not_requested)
+  hasPendingUploads Boolean          @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chunks     Chunk[]
+  transcript Transcript?
+  summary    Summary?
+
+  @@index([ownerId, startedAt])
+  @@index([ownerId, sourceType])
+  @@index([ownerId, status])
+  @@map("recordings")
+}
+
+model Chunk {
+  id          String      @id @default(cuid())
+  recording   Recording   @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  recordingId String
+
+  channel      String // "tab" | "mic" | "mixed"
+  sequence     Int
+  status       ChunkStatus @default(stored)
+  startOffsetMs Int
+  durationMs   Int
+  byteLength   Int
+  mimeType     String
+  checksum     String? // SHA-256 of the bytes for integrity verification
+  storageKey   String // location in the object store
+
+  createdAt  DateTime  @default(now())
+  uploadedAt DateTime?
+
+  // A given (recording, channel, sequence) is unique — enforces idempotent
+  // chunk commits and prevents duplicate persistence races.
+  @@unique([recordingId, channel, sequence])
+  @@index([recordingId])
+  @@map("chunks")
+}
+
+model Transcript {
+  id          String           @id @default(cuid())
+  recording   Recording        @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  recordingId String           @unique
+  status      TranscriptStatus @default(queued)
+  language    String?
+  model       String?
+  // Flattened text for full-text search.
+  text        String           @default("")
+  // Array of { startMs, endMs, text, speaker?, confidence? }.
+  segments    Json             @default("[]")
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@map("transcripts")
+}
+
+model Summary {
+  id          String    @id @default(cuid())
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  recordingId String    @unique
+
+  executiveSummary String   @default("")
+  meetingNotes     String   @default("")
+  actionItems      String[] @default([])
+  keyDecisions     String[] @default([])
+  questionsAsked   String[] @default([])
+  followUps        String[] @default([])
+
+  createdAt DateTime @default(now())
+
+  @@map("summaries")
+}

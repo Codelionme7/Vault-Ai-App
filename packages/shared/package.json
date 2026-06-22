@@ -2,7 +2,6 @@
   "name": "@echovault/shared",
   "version": "0.1.0",
   "description": "Shared domain types and constants for EchoVault AI.",
-  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
