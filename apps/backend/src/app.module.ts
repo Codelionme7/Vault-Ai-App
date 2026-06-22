@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration, { type AppConfig } from './config/configuration';
 import { AuthModule } from './auth/auth.module';
 import { ChunksModule } from './chunks/chunks.module';
+import { ExportModule } from './export/export.module';
 import { CryptoModule } from './common/crypto/crypto.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { HealthModule } from './health/health.module';
@@ -40,6 +41,7 @@ import { TranscriptionModule } from './transcription/transcription.module';
     ChunksModule,
     SearchModule,
     TranscriptionModule,
+    ExportModule,
     HealthModule,
   ],
 })

@@ -13,6 +13,8 @@ nothing in the codebase pretends to be more finished than it is.
 - Storage abstraction: local FS + S3/R2/B2, **AES-256-GCM at rest**
 - Transcription queue (BullMQ) with OpenAI + local-whisper drivers
 - Offline, dependency-free heuristic summarizer
+- Export system: ZIP bundle, transcript (txt/vtt/srt/md), summary (md + generated
+  PDF), audio (lossless WebM server-side; WAV client-side; wav/mp3/flac via ffmpeg)
 - React web recorder with live dashboard, resilient upload, library, recovery
 - MV3 browser extension: tab capture (offscreen) + Google Meet detection
 - Docker Compose, GitHub Actions CI, OpenAPI/Swagger, ERD + architecture docs
@@ -26,7 +28,7 @@ nothing in the codebase pretends to be more finished than it is.
 | **Full-text search** | Postgres `tsvector` + GIN index on transcript text (currently `ILIKE`/`contains`). |
 | **Speaker diarization** | Wire the `diarize` flag through to a diarization-capable whisper sidecar; persist `speaker` per segment (schema already supports it). |
 | **Extension → cloud sync** | Authenticated direct upload from the extension reusing the web `UploadQueue` (currently records locally + download). |
-| **Export bundles** | ZIP packaging (WAV/FLAC/MP3 + transcript + PDF/Markdown summary). FLAC/MP3 transcode via ffmpeg worker. |
+| **Lossy transcode by default** | Bundle a managed ffmpeg (e.g. `ffmpeg-static`) so WAV/MP3/FLAC server-side export works out of the box without operators setting `FFMPEG_PATH`. |
 | **Captions capture** | Optional Google Meet caption scraping stored alongside (never relied upon) audio. |
 | **Partial-chunk durability** | Periodic `requestData()` flush so even an in-progress chunk survives a hard crash (today: at most one chunk lost). |
 | **E2E tests** | Playwright for the capture→upload→library flow; backend e2e against a throwaway Postgres. |

@@ -33,6 +33,10 @@ export interface AppConfig {
     openaiApiKey?: string;
     whisperServiceUrl?: string;
   };
+  export: {
+    /** Path to an ffmpeg binary; enables wav/mp3/flac export when set. */
+    ffmpegPath?: string;
+  };
 }
 
 const toInt = (v: string | undefined, fallback: number): number => {
@@ -75,5 +79,8 @@ export default (): AppConfig => ({
     driver: (process.env.TRANSCRIPTION_DRIVER as 'none' | 'openai' | 'local-whisper') ?? 'none',
     openaiApiKey: process.env.OPENAI_API_KEY || undefined,
     whisperServiceUrl: process.env.WHISPER_SERVICE_URL || undefined,
+  },
+  export: {
+    ffmpegPath: process.env.FFMPEG_PATH || undefined,
   },
 });

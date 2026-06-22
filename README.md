@@ -108,6 +108,10 @@ docker compose up -d      # postgres + redis + backend (schema auto-applied)
    _Library_, search it, and optionally request a transcript.
 4. **Extension** → click the toolbar icon on any tab (auto-detects Google Meet)
    → **Start recording**. Saved recordings can be downloaded from the popup.
+5. **Export** (Library → _Export ▾_): a full **ZIP bundle** (audio + transcript +
+   notes + summary PDF + metadata), the **original lossless audio**, **WAV**
+   generated in-browser, or transcript/summary files. WAV/MP3/FLAC server-side
+   transcodes are available when `FFMPEG_PATH` is set.
 
 ---
 

@@ -457,6 +457,44 @@ body {
   color: var(--warn);
 }
 
+/* Export dropdown */
+.export {
+  position: relative;
+}
+.export__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
+  min-width: 200px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.export__item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.export__item:hover:not(:disabled) {
+  background: var(--bg-elev-2);
+}
+.export__item:disabled {
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
 /* Recovery */
 .recovery {
   border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--border));

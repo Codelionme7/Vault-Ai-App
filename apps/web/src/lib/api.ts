@@ -1,4 +1,5 @@
 import type {
+  AudioChunk,
   AuthTokens,
   AuthUser,
   CommitChunkInput,
@@ -154,6 +155,35 @@ class ApiClient {
 
   commitChunk(input: CommitChunkInput): Promise<unknown> {
     return this.request('/chunks/commit', { method: 'POST', body: JSON.stringify(input) });
+  }
+
+  // --- Chunks (read) & export ---
+  listChunks(recordingId: string): Promise<AudioChunk[]> {
+    return this.request<AudioChunk[]>(`/chunks?recordingId=${encodeURIComponent(recordingId)}`);
+  }
+
+  /** Decrypted chunk bytes (for client-side WAV export / playback). */
+  async getChunkBlob(chunkId: string): Promise<Blob> {
+    const res = await this.authedFetch(`/chunks/${chunkId}/data`);
+    if (!res.ok) throw new Error(`Chunk fetch failed: ${res.status}`);
+    return res.blob();
+  }
+
+  /** Authed download of any server-generated file; parses the filename. */
+  async getFile(path: string): Promise<{ blob: Blob; filename: string }> {
+    const res = await this.authedFetch(path);
+    if (!res.ok) {
+      throw new Error(`${res.status}: ${await res.text().catch(() => res.statusText)}`);
+    }
+    const disposition = res.headers.get('Content-Disposition') ?? '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    return { blob: await res.blob(), filename: match?.[1] ?? 'echovault-export' };
+  }
+
+  private authedFetch(path: string): Promise<Response> {
+    const headers = new Headers();
+    if (this.accessToken) headers.set('Authorization', `Bearer ${this.accessToken}`);
+    return fetch(`${BASE_URL}${path}`, { headers });
   }
 }
 

@@ -59,6 +59,22 @@ POST /chunks/commit  (+ SHA-256)      -> chunk committed; recording stats update
 | GET | `/recordings/:id/transcript` | — | The transcript (when ready) |
 | GET | `/recordings/:id/summary` | — | The generated summary (when ready) |
 
+## Export
+
+All export endpoints are owner-scoped and return a file download
+(`Content-Disposition: attachment`).
+
+| Method | Path | Query | Notes |
+| --- | --- | --- | --- |
+| GET | `/recordings/:id/export/zip` | — | ZIP bundle: audio per channel (.webm) + transcript (.txt/.vtt/.srt) + notes.md + summary.pdf + metadata.json |
+| GET | `/recordings/:id/export/audio` | `format=webm\|wav\|mp3\|flac`, `channel?` | `webm` is the lossless original (always available); `wav/mp3/flac` require `FFMPEG_PATH` |
+| GET | `/recordings/:id/export/transcript` | `format=txt\|vtt\|srt\|md` | `400` until a transcript is completed |
+| GET | `/recordings/:id/export/summary` | `format=md\|pdf` | Markdown notes or a generated PDF |
+
+> The web app additionally offers **client-side WAV export** (decodes chunks via
+> the Web Audio API and encodes with the shared engine), so lossless WAV needs
+> no server transcode or ffmpeg.
+
 ## Health
 
 | Method | Path | Notes |
