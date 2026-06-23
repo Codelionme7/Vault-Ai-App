@@ -105,7 +105,10 @@ docker compose up -d      # postgres + redis + backend (schema auto-applied)
 2. Watch the live dashboard: timer, chunk count, bytes stored, pending sync, and
    per-channel level meters.
 3. **Stop** finalizes the session and completes the upload. Find it in the
-   _Library_, search it, and optionally request a transcript.
+   _Library_, search it, and optionally request a transcript. Click a recording
+   (or **View**) to open the **transcript & summary viewer** — speaker-labelled,
+   timestamped lines with in-pane filtering, plus a structured summary tab; it
+   polls live while transcription runs.
 4. **Extension** → click the toolbar icon on any tab (auto-detects Google Meet)
    → **Start recording**. Saved recordings can be downloaded from the popup.
 5. **Export** (Library → _Export ▾_): a full **ZIP bundle** (audio + transcript +

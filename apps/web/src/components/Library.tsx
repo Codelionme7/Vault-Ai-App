@@ -3,6 +3,7 @@ import type { Recording } from '@echovault/shared';
 import { api } from '../lib/api';
 import { downloadServerExport, exportWavClient } from '../lib/export-client';
 import { formatBytes, formatDate, formatDuration, sourceLabel } from '../lib/format';
+import { TranscriptViewer } from './TranscriptViewer';
 
 export function Library() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
@@ -11,6 +12,7 @@ export function Library() {
   const [error, setError] = useState<string>();
   const [openMenu, setOpenMenu] = useState<string>();
   const [busy, setBusy] = useState<string>();
+  const [viewing, setViewing] = useState<Recording | null>(null);
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
@@ -40,7 +42,7 @@ export function Library() {
 
   const transcribe = async (id: string) => {
     try {
-      await api.requestTranscription(id, true);
+      await api.requestTranscription(id, { summarize: true, diarize: true });
       await load(query);
     } catch (err) {
       setError((err as Error).message);
@@ -83,7 +85,13 @@ export function Library() {
         {recordings.map((r) => (
           <li key={r.id} className="rec">
             <div className="rec__main">
-              <div className="rec__title">{r.title}</div>
+              <button
+                className="rec__title rec__title--btn"
+                onClick={() => setViewing(r)}
+                title="View transcript & summary"
+              >
+                {r.title}
+              </button>
               <div className="rec__meta">
                 <span className={`tag tag--${r.sourceType}`}>{sourceLabel(r.sourceType)}</span>
                 <span>{formatDate(r.startedAt)}</span>
@@ -102,6 +110,9 @@ export function Library() {
               )}
             </div>
             <div className="rec__actions">
+              <button className="btn btn--ghost" onClick={() => setViewing(r)}>
+                View
+              </button>
               <span className={`transcript transcript--${r.transcriptStatus}`}>
                 {transcriptLabel(r.transcriptStatus)}
               </span>
@@ -173,6 +184,16 @@ export function Library() {
           </li>
         ))}
       </ul>
+
+      {viewing && (
+        <TranscriptViewer
+          recording={viewing}
+          onClose={() => {
+            setViewing(null);
+            void load(query);
+          }}
+        />
+      )}
     </div>
   );
 }

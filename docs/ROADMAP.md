@@ -22,6 +22,9 @@ nothing in the codebase pretends to be more finished than it is.
 - Export system: ZIP bundle, transcript (txt/vtt/srt/md), summary (md + generated
   PDF), audio (lossless WebM server-side; WAV client-side; wav/mp3/flac via ffmpeg)
 - React web recorder with live dashboard, resilient upload, library, recovery
+- Web transcript viewer: speaker-grouped, timestamped transcript pane with
+  per-speaker colors, in-pane filter/highlight, live polling while transcribing,
+  on-demand generation, and a structured summary tab
 - MV3 browser extension: tab capture (offscreen) + Google Meet detection
 - Docker Compose, GitHub Actions CI, OpenAPI/Swagger, ERD + architecture docs
 - Unit tests across engine, backend, and web
@@ -33,7 +36,6 @@ nothing in the codebase pretends to be more finished than it is.
 | **Desktop app** | Tauri shell wrapping the web UI for OS-level capture, system-audio loopback, and tray controls. The engine already runs unchanged in a webview. |
 | **FTS via migrations** | Persist the GIN indexes through a real Prisma migration with generated `tsvector` columns (today they're an idempotent `prisma:fts` script that `db push` can drop). |
 | **Acoustic diarization** | Replace the gap-based heuristic with speaker-embedding diarization (e.g. pyannote) in the whisper sidecar; the segment `speaker` field and exports already carry it through. |
-| **Web transcript viewer** | A speaker-labelled, timestamped transcript pane in the web app (data already exposed via `GET /recordings/:id/transcript`). |
 | **Extension → cloud sync** | Authenticated direct upload from the extension reusing the web `UploadQueue` (currently records locally + download). |
 | **Lossy transcode by default** | Bundle a managed ffmpeg (e.g. `ffmpeg-static`) so WAV/MP3/FLAC server-side export works out of the box without operators setting `FFMPEG_PATH`. |
 | **Captions capture** | Optional Google Meet caption scraping stored alongside (never relied upon) audio. |

@@ -5,6 +5,8 @@ import type {
   CommitChunkInput,
   Recording,
   SearchResult,
+  Summary,
+  Transcript,
   UploadTicket,
 } from '@echovault/shared';
 
@@ -123,11 +125,22 @@ class ApiClient {
     return this.request<SearchResult>(`/search?${qs}`);
   }
 
-  requestTranscription(id: string, summarize = true): Promise<{ status: string }> {
+  requestTranscription(
+    id: string,
+    opts: { summarize?: boolean; diarize?: boolean; language?: string } = {},
+  ): Promise<{ status: string }> {
     return this.request(`/recordings/${id}/transcribe`, {
       method: 'POST',
-      body: JSON.stringify({ summarize }),
+      body: JSON.stringify({ summarize: true, ...opts }),
     });
+  }
+
+  getTranscript(id: string): Promise<Transcript> {
+    return this.request<Transcript>(`/recordings/${id}/transcript`);
+  }
+
+  getSummary(id: string): Promise<Summary> {
+    return this.request<Summary>(`/recordings/${id}/summary`);
   }
 
   // --- Chunk upload (local-driver path) ---
