@@ -1,6 +1,6 @@
-import type { RecordingChannel } from './constants.js';
-import type { SessionMetadata, SourceType } from './source.js';
-import type { TranscriptStatus } from './transcription.js';
+import type { RecordingChannel } from './constants';
+import type { SessionMetadata, SourceType } from './source';
+import type { TranscriptStatus } from './transcription';
 
 /**
  * The recording session — the durable record of "something was captured."

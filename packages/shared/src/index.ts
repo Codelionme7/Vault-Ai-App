@@ -7,9 +7,9 @@
  * which is the contract that matters most in an audio-first product.
  */
 
-export * from './recording.js';
-export * from './chunk.js';
-export * from './source.js';
-export * from './transcription.js';
-export * from './api.js';
-export * from './constants.js';
+export * from './recording';
+export * from './chunk';
+export * from './source';
+export * from './transcription';
+export * from './api';
+export * from './constants';

@@ -1,4 +1,4 @@
-import type { Recording } from './recording.js';
+import type { Recording } from './recording';
 
 export interface AuthTokens {
   accessToken: string;
