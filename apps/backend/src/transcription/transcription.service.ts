@@ -4,6 +4,8 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
@@ -24,7 +26,11 @@ export class TranscriptionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService<AppConfig, true>,
-    @InjectQueue(TRANSCRIPTION_QUEUE) private readonly queue: Queue<TranscriptionJob>,
+    // Optional: absent when the background queue is disabled (e.g. serverless),
+    // in which case transcript/summary reads still work but enqueue is rejected.
+    @Optional()
+    @InjectQueue(TRANSCRIPTION_QUEUE)
+    private readonly queue?: Queue<TranscriptionJob>,
   ) {}
 
   /** Resolve the configured transcription backend, or null when disabled. */
@@ -63,6 +69,13 @@ export class TranscriptionService {
     const rec = await this.prisma.recording.findUnique({ where: { id: recordingId } });
     if (!rec) throw new NotFoundException('Recording not found');
     if (rec.ownerId !== ownerId) throw new ForbiddenException('Not your recording');
+
+    if (!this.queue) {
+      throw new ServiceUnavailableException(
+        'Transcription is unavailable in this deployment (no background worker). ' +
+          'The audio is fully captured and stored.',
+      );
+    }
 
     if (!this.createDriver()) {
       throw new BadRequestException(

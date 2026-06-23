@@ -51,3 +51,6 @@ Thumbs.db
 apps/extension/dist/
 *.crx
 *.pem
+
+# Vercel
+.vercel/

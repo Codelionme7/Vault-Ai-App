@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "vercel-build": "npm run build --workspace @echovault/shared && npm run prisma:generate --workspace @echovault/backend && npm run build --workspace @echovault/backend && npm run build --workspace @echovault/web",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

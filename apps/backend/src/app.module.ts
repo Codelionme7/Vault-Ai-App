@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration, { type AppConfig } from './config/configuration';
+import { QUEUE_ENABLED } from './config/runtime';
 import { AuthModule } from './auth/auth.module';
 import { ChunksModule } from './chunks/chunks.module';
 import { ExportModule } from './export/export.module';
@@ -16,23 +17,29 @@ import { TranscriptionModule } from './transcription/transcription.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
-    // BullMQ root connection; queues are registered per-feature module.
-    BullModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService<AppConfig, true>) => {
-        const redis = config.get('redis', { infer: true });
-        return {
-          connection: {
-            host: redis.host,
-            port: redis.port,
-            password: redis.password,
-            // Don't let a missing Redis crash the API; jobs simply won't run.
-            maxRetriesPerRequest: null,
-            enableOfflineQueue: true,
-          },
-        };
-      },
-    }),
+    // BullMQ root connection; queues are registered per-feature module. Omitted
+    // entirely when the queue is disabled (serverless) so no Redis connection is
+    // ever attempted.
+    ...(QUEUE_ENABLED
+      ? [
+          BullModule.forRootAsync({
+            inject: [ConfigService],
+            useFactory: (config: ConfigService<AppConfig, true>) => {
+              const redis = config.get('redis', { infer: true });
+              return {
+                connection: {
+                  host: redis.host,
+                  port: redis.port,
+                  password: redis.password,
+                  // Don't let a missing Redis crash the API; jobs simply won't run.
+                  maxRetriesPerRequest: null,
+                  enableOfflineQueue: true,
+                },
+              };
+            },
+          }),
+        ]
+      : []),
     PrismaModule,
     CryptoModule,
     StorageModule,

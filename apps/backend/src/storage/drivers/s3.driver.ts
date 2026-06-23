@@ -4,6 +4,7 @@ import {
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
+  type ServerSideEncryption,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { sanitizeKey } from '../key-util';
@@ -17,6 +18,8 @@ export interface S3DriverConfig {
   secretAccessKey?: string;
   forcePathStyle: boolean;
   signedUrlTtl: number;
+  /** SSE algorithm header (e.g. "AES256"); omit/empty to disable (R2). */
+  serverSideEncryption?: string;
 }
 
 /**
@@ -40,6 +43,10 @@ export class S3StorageDriver implements StorageDriver {
     });
   }
 
+  private get sse(): ServerSideEncryption | undefined {
+    return (this.config.serverSideEncryption || undefined) as ServerSideEncryption | undefined;
+  }
+
   async put(key: string, data: Buffer, contentType = 'application/octet-stream'): Promise<void> {
     await this.client.send(
       new PutObjectCommand({
@@ -47,7 +54,7 @@ export class S3StorageDriver implements StorageDriver {
         Key: sanitizeKey(key),
         Body: data,
         ContentType: contentType,
-        ServerSideEncryption: 'AES256',
+        ServerSideEncryption: this.sse,
       }),
     );
   }
@@ -80,11 +87,12 @@ export class S3StorageDriver implements StorageDriver {
 
   async createUploadTarget(key: string, contentType: string): Promise<UploadTarget> {
     const safeKey = sanitizeKey(key);
+    const sse = this.sse;
     const command = new PutObjectCommand({
       Bucket: this.config.bucket,
       Key: safeKey,
       ContentType: contentType,
-      ServerSideEncryption: 'AES256',
+      ServerSideEncryption: sse,
     });
     const uploadUrl = await getSignedUrl(this.client, command, {
       expiresIn: this.config.signedUrlTtl,
@@ -93,9 +101,10 @@ export class S3StorageDriver implements StorageDriver {
       uploadUrl,
       method: 'PUT',
       storageKey: safeKey,
+      // The client must echo every header that was part of the signature.
       headers: {
         'Content-Type': contentType,
-        'x-amz-server-side-encryption': 'AES256',
+        ...(sse ? { 'x-amz-server-side-encryption': sse } : {}),
       },
       expiresAt: new Date(Date.now() + this.config.signedUrlTtl * 1000).toISOString(),
     };

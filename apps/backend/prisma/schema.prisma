@@ -6,6 +6,9 @@
 
 generator client {
   provider = "prisma-client-js"
+  // "native" for local/dev/Docker; the rhel targets are the Linux engines the
+  // Vercel/AWS Lambda runtime needs (openssl 1.0.x and 3.0.x cover both images).
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

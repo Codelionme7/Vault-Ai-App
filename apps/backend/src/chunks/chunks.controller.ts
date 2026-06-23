@@ -58,12 +58,19 @@ export class ChunksController {
   }
 
   @Get(':id/data')
-  @ApiOperation({ summary: 'Stream a decrypted chunk for playback/export' })
+  @ApiOperation({ summary: 'Stream a decrypted chunk (or redirect to a presigned URL)' })
   async data(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Res() res: Response,
   ): Promise<void> {
+    // Prefer a direct-from-storage download where possible (S3 + unencrypted),
+    // so large chunks bypass the API — essential under serverless body limits.
+    const url = await this.chunks.getDownloadUrl(user.id, id);
+    if (url) {
+      res.redirect(302, url);
+      return;
+    }
     const { bytes, mimeType } = await this.chunks.getBytes(user.id, id);
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Length', bytes.length);

@@ -17,6 +17,8 @@ import type { StorageDriver, UploadTarget } from './storage.types';
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
   private driver!: StorageDriver;
+  private appEncryption = true;
+  private signedUrlTtl = 900;
 
   constructor(
     private readonly config: ConfigService<AppConfig, true>,
@@ -25,6 +27,8 @@ export class StorageService implements OnModuleInit {
 
   onModuleInit(): void {
     const storage = this.config.get('storage', { infer: true });
+    this.appEncryption = storage.appEncryption;
+    this.signedUrlTtl = storage.s3.signedUrlTtl;
     if (storage.driver === 's3') {
       this.driver = new S3StorageDriver(storage.s3);
     } else {
@@ -33,23 +37,40 @@ export class StorageService implements OnModuleInit {
         this.config.get('apiBaseUrl', { infer: true }),
       );
     }
-    this.logger.log(`Storage driver: ${this.driver.name}`);
+    this.logger.log(
+      `Storage driver: ${this.driver.name} (app-encryption: ${this.appEncryption ? 'on' : 'off'})`,
+    );
   }
 
   get activeDriver(): StorageDriver {
     return this.driver;
   }
 
-  /** Store bytes, encrypted at rest. */
-  async putEncrypted(key: string, data: Buffer, contentType?: string): Promise<void> {
-    const sealed = this.crypto.encrypt(data);
-    await this.driver.put(key, sealed, contentType);
+  /** Whether bytes are sealed by the app layer (vs. relying on driver/bucket SSE). */
+  get encryptsAtRest(): boolean {
+    return this.appEncryption;
   }
 
-  /** Read and decrypt bytes previously stored with {@link putEncrypted}. */
+  /** Store bytes, encrypted at rest when app-encryption is enabled. */
+  async putEncrypted(key: string, data: Buffer, contentType?: string): Promise<void> {
+    const payload = this.appEncryption ? this.crypto.encrypt(data) : data;
+    await this.driver.put(key, payload, contentType);
+  }
+
+  /** Read bytes previously stored with {@link putEncrypted}, decrypting if sealed. */
   async getDecrypted(key: string): Promise<Buffer> {
-    const sealed = await this.driver.get(key);
-    return this.crypto.decrypt(sealed);
+    const raw = await this.driver.get(key);
+    return this.appEncryption ? this.crypto.decrypt(raw) : raw;
+  }
+
+  /**
+   * A time-limited direct download URL, or null when not applicable. Only
+   * offered when the driver supports it AND bytes are stored unencrypted — an
+   * app-encrypted object would hand the client undecryptable ciphertext.
+   */
+  async getSignedDownloadUrl(key: string): Promise<string | null> {
+    if (this.appEncryption || !this.driver.getSignedDownloadUrl) return null;
+    return this.driver.getSignedDownloadUrl(key, this.signedUrlTtl);
   }
 
   async delete(key: string): Promise<void> {

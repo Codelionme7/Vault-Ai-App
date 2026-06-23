@@ -4,8 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { AudioChunk, UploadTicket } from '@echovault/shared';
 import { MAX_CHUNK_BYTES } from '@echovault/shared';
+import type { AppConfig } from '../config/configuration';
 import { CryptoService } from '../common/crypto/crypto.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { RecordingsService } from '../recordings/recordings.service';
@@ -26,6 +28,7 @@ export class ChunksService {
     private readonly storage: StorageService,
     private readonly recordings: RecordingsService,
     private readonly crypto: CryptoService,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
   async requestUploadTarget(
@@ -58,8 +61,12 @@ export class ChunksService {
   async commit(ownerId: string, dto: CommitChunkDto): Promise<AudioChunk> {
     await this.assertOwnsRecording(ownerId, dto.recordingId);
 
-    // Integrity: verify the stored bytes match the client's checksum.
-    if (dto.checksum) {
+    // Integrity: verify the stored bytes match the client's checksum. This
+    // re-downloads the chunk, so it can be disabled (CHUNK_VERIFY_ON_COMMIT=
+    // false) where a round-trip per chunk is too costly — e.g. serverless with
+    // direct-to-S3 uploads, where S3 already validates transfer integrity.
+    const verify = this.config.get('storage', { infer: true }).verifyChunkOnCommit;
+    if (dto.checksum && verify) {
       const stored = await this.storage.getDecrypted(dto.storageKey).catch(() => null);
       if (!stored) throw new BadRequestException('Uploaded bytes not found for commit');
       const actual = this.crypto.sha256(stored);
@@ -121,6 +128,21 @@ export class ChunksService {
     await this.assertOwnsRecording(ownerId, row.recordingId);
     const bytes = await this.storage.getDecrypted(row.storageKey);
     return { bytes, mimeType: row.mimeType };
+  }
+
+  /**
+   * A presigned direct-download URL for a chunk, or null when the bytes must be
+   * streamed through the API instead (local driver, or app-encrypted objects).
+   * Lets serverless playback/export bypass the function body-size limit.
+   */
+  async getDownloadUrl(ownerId: string, chunkId: string): Promise<string | null> {
+    const row = await this.prisma.chunk.findUnique({
+      where: { id: chunkId },
+      select: { recordingId: true, storageKey: true },
+    });
+    if (!row) throw new NotFoundException('Chunk not found');
+    await this.assertOwnsRecording(ownerId, row.recordingId);
+    return this.storage.getSignedDownloadUrl(row.storageKey);
   }
 
   private async assertOwnsRecording(ownerId: string, recordingId: string): Promise<void> {
