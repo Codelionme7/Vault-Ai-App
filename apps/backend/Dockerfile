@@ -34,11 +34,14 @@ ENV NODE_ENV=production
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
+# npm workspaces hoist all dependencies (incl. @prisma/client and the
+# @echovault/shared workspace symlink) into the root node_modules — there is no
+# per-workspace apps/backend/node_modules to copy. Node resolves up from the
+# backend dir to /app/node_modules at runtime.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/package.json
 COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 
