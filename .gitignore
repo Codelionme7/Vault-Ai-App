@@ -17,9 +17,11 @@ out/
 .env.*.local
 !.env.example
 
-# Storage (local-first recordings should never be committed)
-storage/
-recordings/
+# Local recording output (never commit captured audio).
+# Anchored so these do NOT match source dirs like apps/backend/src/storage
+# or apps/backend/src/recordings.
+/storage/
+/apps/backend/storage/
 *.wav
 *.flac
 *.mp3
