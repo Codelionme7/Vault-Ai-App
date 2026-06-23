@@ -11,6 +11,8 @@ import type { AppConfig } from '../config/configuration';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { OpenAiTranscriptionDriver } from './drivers/openai.driver';
 import { LocalWhisperDriver } from './drivers/whisper.driver';
+import { AnthropicSummarizer } from './drivers/anthropic-summarizer';
+import { HeuristicSummarizer, type Summarizer } from './summarizer';
 import {
   TRANSCRIPTION_QUEUE,
   type TranscriptionDriver,
@@ -35,6 +37,21 @@ export class TranscriptionService {
       return new LocalWhisperDriver(cfg.whisperServiceUrl);
     }
     return null;
+  }
+
+  /**
+   * Resolve the summary backend. Uses Claude when an Anthropic key is available
+   * (driver "auto" or "anthropic"); otherwise the offline heuristic — which is
+   * also the runtime fallback if the LLM call fails.
+   */
+  createSummarizer(): Summarizer {
+    const cfg = this.config.get('summary', { infer: true });
+    const useAnthropic =
+      (cfg.driver === 'auto' || cfg.driver === 'anthropic') && Boolean(cfg.anthropicApiKey);
+    if (useAnthropic) {
+      return new AnthropicSummarizer(cfg.anthropicApiKey!, cfg.anthropicModel);
+    }
+    return new HeuristicSummarizer();
   }
 
   /** Queue a transcription job. Never blocks recording — fully asynchronous. */

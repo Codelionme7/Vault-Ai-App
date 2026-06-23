@@ -49,14 +49,14 @@ POST /chunks/commit  (+ SHA-256)      -> chunk committed; recording stats update
 
 | Method | Path | Query | Notes |
 | --- | --- | --- | --- |
-| GET | `/search` | `q, sourceType, tags, from, to, page, pageSize, includeTranscript` | Owner-scoped; paginated. `includeTranscript=true` also matches transcript text. |
+| GET | `/search` | `q, sourceType, tags, from, to, page, pageSize, includeTranscript` | Owner-scoped; paginated. With `q`, uses Postgres full-text (`tsvector`/`websearch_to_tsquery`) ranked by `ts_rank` — title > tags > notes; `includeTranscript=true` also matches/ranks transcript text. Falls back to `ILIKE` if FTS is unavailable (`SEARCH_FTS=false`). |
 
 ## Transcription (optional, async)
 
 | Method | Path | Body | Notes |
 | --- | --- | --- | --- |
-| POST | `/recordings/:id/transcribe` | `{ language?, diarize?, summarize? }` | Queues a job; `400` if `TRANSCRIPTION_DRIVER=none` |
-| GET | `/recordings/:id/transcript` | — | The transcript (when ready) |
+| POST | `/recordings/:id/transcribe` | `{ language?, diarize?, summarize? }` | Queues a job; `400` if `TRANSCRIPTION_DRIVER=none`. `diarize` adds per-segment `speaker` labels (sidecar diarization, or a heuristic gap-based fallback). `summarize` generates a summary with Claude (`claude-opus-4-8`) when `ANTHROPIC_API_KEY` is set, else the offline heuristic. |
+| GET | `/recordings/:id/transcript` | — | The transcript (segments include `speaker` when diarized) |
 | GET | `/recordings/:id/summary` | — | The generated summary (when ready) |
 
 ## Export

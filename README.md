@@ -119,7 +119,8 @@ docker compose up -d      # postgres + redis + backend (schema auto-applied)
 
 - **Engine/Web/Extension:** TypeScript, Web Audio API, MediaRecorder, IndexedDB,
   React + Vite, esbuild (MV3).
-- **Backend:** NestJS, Prisma, PostgreSQL, BullMQ + Redis, AWS SDK (S3/R2/B2),
+- **Backend:** NestJS, Prisma, PostgreSQL (full-text `tsvector`/GIN search),
+  BullMQ + Redis, AWS SDK (S3/R2/B2), Anthropic SDK (`claude-opus-4-8` summaries),
   JWT auth, Swagger/OpenAPI.
 - **Tooling:** npm workspaces, Vitest, Docker, GitHub Actions.
 

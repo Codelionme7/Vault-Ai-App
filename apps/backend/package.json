@@ -12,12 +12,14 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:fts": "prisma db execute --file prisma/sql/0001_fts_indexes.sql --schema prisma/schema.prisma",
     "openapi": "tsx scripts/gen-openapi.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0",
     "@aws-sdk/client-s3": "^3.637.0",
     "@aws-sdk/s3-request-presigner": "^3.637.0",
     "@echovault/shared": "*",

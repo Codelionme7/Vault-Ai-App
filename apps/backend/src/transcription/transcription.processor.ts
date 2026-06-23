@@ -2,9 +2,11 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import type { Job } from 'bullmq';
 import type { Prisma } from '@prisma/client';
+import type { TranscriptSegment } from '@echovault/shared';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
-import { summarizeText } from './summarize';
+import { assignSpeakersByGaps, hasSpeakers } from './diarize';
+import { HeuristicSummarizer } from './summarizer';
 import { TranscriptionService } from './transcription.service';
 import { TRANSCRIPTION_QUEUE, type TranscriptionJob } from './transcription.types';
 
@@ -52,6 +54,13 @@ export class TranscriptionProcessor extends WorkerHost {
         diarize,
       });
 
+      // Diarization: if requested but the driver returned no speaker labels,
+      // apply the heuristic turn-taking fallback so speakers flow end-to-end.
+      let segments: TranscriptSegment[] = result.segments;
+      if (diarize && !hasSpeakers(segments)) {
+        segments = assignSpeakersByGaps(segments);
+      }
+
       await this.prisma.transcript.update({
         where: { recordingId },
         data: {
@@ -59,7 +68,7 @@ export class TranscriptionProcessor extends WorkerHost {
           language: result.language,
           model: result.model,
           text: result.text,
-          segments: result.segments as unknown as Prisma.InputJsonValue,
+          segments: segments as unknown as Prisma.InputJsonValue,
           completedAt: new Date(),
         },
       });
@@ -69,7 +78,7 @@ export class TranscriptionProcessor extends WorkerHost {
       });
 
       if (summarize) {
-        const s = summarizeText(result.text);
+        const s = await this.summarize(result.text);
         await this.prisma.summary.upsert({
           where: { recordingId },
           create: { recordingId, ...s },
@@ -106,6 +115,23 @@ export class TranscriptionProcessor extends WorkerHost {
       parts.push(await this.storage.getDecrypted(c.storageKey));
     }
     return { bytes: Buffer.concat(parts), mimeType: selected[0]?.mimeType ?? 'audio/webm' };
+  }
+
+  /** Summarize via the configured backend (Claude or heuristic), falling back
+   *  to the offline heuristic if the LLM call fails. */
+  private async summarize(text: string) {
+    const summarizer = this.transcription.createSummarizer();
+    try {
+      return await summarizer.summarize(text);
+    } catch (err) {
+      if (summarizer.name !== 'heuristic') {
+        this.logger.warn(
+          `Summarizer "${summarizer.name}" failed (${(err as Error).message}); using heuristic`,
+        );
+        return new HeuristicSummarizer().summarize(text);
+      }
+      throw err;
+    }
   }
 
   private async setStatus(

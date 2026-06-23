@@ -37,6 +37,16 @@ export interface AppConfig {
     /** Path to an ffmpeg binary; enables wav/mp3/flac export when set. */
     ffmpegPath?: string;
   };
+  summary: {
+    /** "auto" uses Claude when ANTHROPIC_API_KEY is set, else the heuristic. */
+    driver: 'auto' | 'anthropic' | 'heuristic';
+    anthropicApiKey?: string;
+    anthropicModel: string;
+  };
+  search: {
+    /** Use Postgres full-text (tsvector) search for the `q` term. */
+    fts: boolean;
+  };
 }
 
 const toInt = (v: string | undefined, fallback: number): number => {
@@ -82,5 +92,13 @@ export default (): AppConfig => ({
   },
   export: {
     ffmpegPath: process.env.FFMPEG_PATH || undefined,
+  },
+  summary: {
+    driver: (process.env.SUMMARY_DRIVER as 'auto' | 'anthropic' | 'heuristic') ?? 'auto',
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY || undefined,
+    anthropicModel: process.env.ANTHROPIC_MODEL ?? 'claude-opus-4-8',
+  },
+  search: {
+    fts: (process.env.SEARCH_FTS ?? 'true') !== 'false',
   },
 });
