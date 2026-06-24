@@ -11,6 +11,16 @@ export default async function handler(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
-  const app = await createApp();
-  app(req, res);
+  try {
+    const app = await createApp();
+    app(req, res);
+  } catch (err) {
+    // Surface startup failures (e.g. missing env vars) as a readable response
+    // instead of an opaque FUNCTION_INVOCATION_FAILED. createApp caches nothing
+    // on failure, so a later request retries once the config is fixed.
+    const detail = err instanceof Error ? err.message : String(err);
+    res.statusCode = 500;
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify({ error: 'Server initialization failed', detail }));
+  }
 }
